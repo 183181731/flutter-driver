@@ -143,13 +143,11 @@ class FlutterElement:
         self.finder = finder
 
     async def click(self):
-        """click element
-        """
+        """click element"""
         await self.driver.tap_element(self.finder)
 
     async def clear(self):
-        """clean text in element
-        """
+        """clean text in element"""
         await self.driver.enter_text('')
 
     async def get_text(self):

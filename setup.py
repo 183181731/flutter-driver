@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='flutter-driver',
-    version='1.0',
+    version='1.0.3',
     description='An flutter automation driver for python',
     long_description=io.open(os.path.join(os.path.dirname('__file__'), 'README.md'), encoding='utf-8').read(),
     long_description_content_type='text/markdown',
@@ -19,7 +19,7 @@ setup(
     author='ndaeqa-wang',
     author_email='183181731@qq.com',
     url='https://github.com/183181731/flutter-driver',
-    packages=find_packages(include=['flutter-driver*']),
+    packages=find_packages(include=['flutter_driver']),
     license='MIT',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -36,5 +36,9 @@ setup(
         'Operating System :: OS Independent',
         'Topic :: Software Development :: Quality Assurance',
         'Topic :: Software Development :: Testing'
+    ],
+    install_requires=[         
+        'aiohttp',         
+        'jsonrpc_base'
     ]
 )

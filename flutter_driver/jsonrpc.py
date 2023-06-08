@@ -9,8 +9,11 @@ import jsonrpc_base
 from jsonrpc_base import TransportError
 
 class Server(jsonrpc_base.Server):
-    """A connection to a HTTP JSON-RPC server, backed by aiohttp"""
+    """A connection to a HTTP JSON-RPC server, backed by aiohttp
 
+    Args:
+        jsonrpc_base (url): ws url
+    """
     def __init__(self, url, session=None, **connect_kwargs):
         super().__init__()
         self._session = session or aiohttp.ClientSession()
