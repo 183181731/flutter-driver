@@ -170,3 +170,30 @@ class ScrollCommand(Command):
     
     def parse_response(self, response):
         return response['response']
+
+class DragCommand(Command):
+    def __init__(self, driver, start_x, start_y, offset_x, offset_y, duration, isolate_id):
+        super().__init__(driver, isolate_id)
+        self.start_x = start_x
+        self.start_y = start_y
+        self.offset_x = offset_x
+        self.offset_y = offset_y
+        self.duration = duration
+
+    def build_command(self):
+        params = {
+            'command': 'drag',            
+            'start_x': self.start_x,
+            'start_y': self.start_y,
+            'offset_x': self.offset_x,
+            'offset_y': self.offset_y,
+            'duration': self.duration,
+            'isolateId': self.isolate_id,
+        }
+        return {
+            'method': 'ext.flutter.driver',
+            'params': params,
+        }
+    
+    def parse_response(self, response):
+        return response['response']

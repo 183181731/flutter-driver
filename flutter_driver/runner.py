@@ -1,7 +1,5 @@
 import subprocess
 import re
-
-
 class FlutterRunnerStrategy:
     def run_flutter_app(self):
         pass
@@ -9,62 +7,93 @@ class FlutterRunnerStrategy:
     def get_dart_vm_url(self):
         pass
 
+    def close_app(self):
+        pass
+
 class Runner:
+    def __init__(self, platform):
+        if platform == 'Windows':
+            self.runner_strategy = WindowsFlutterRunnerStrategy()
+        elif platform == 'Darwin':
+            self.runner_strategy = MacFlutterRunnerStrategy()
+        elif platform == 'Linux':
+            self.runner_strategy = LinuxFlutterRunnerStrategy()
+        elif platform == 'Web':
+            self.runner_strategy = WebFlutterRunnerStrategy()
+        elif platform == 'Android':
+            self.runner_strategy = AndroidFlutterRunnerStrategy()
+        elif platform == 'iOS':
+            self.runner_strategy = IOSFlutterRunnerStrategy()
 
-    def __init__(self, platform, path):
-        if platform.system() == 'Windows':
-            self.runner_strategy = WindowsFlutterRunnerStrategy(path)
-        elif platform.system() == 'Darwin':
-            self.runner_strategy = MacFlutterRunnerStrategy(path)
-        elif platform.system() == 'Linux':
-            self.runner_strategy = LinuxFlutterRunnerStrategy(path)
-        elif platform.system() == 'Web':
-            self.runner_strategy = WebFlutterRunnerStrategy(path)
-        elif platform.system() == 'Android':
-            self.runner_strategy = AndroidFlutterRunnerStrategy(path)
-        elif platform.system() == 'iOS':
-            self.runner_strategy = IOSFlutterRunnerStrategy(path)
-
-    def runApp(self):
-        self.runner_strategy.run_flutter_app()
+    def runApp(self, path):
+        self.runner_strategy.run_flutter_app(path)
         return self.runner_strategy.get_dart_vm_url()
+
+    def stopApp(self):
+        self.runner_strategy.close_app()
 
 
 class WindowsFlutterRunnerStrategy(FlutterRunnerStrategy):
     def __init__(self):
-        pass
+        self.process = None
 
-    def run_flutter_app(self):
-        cmd = 'flutter run -d windows'
-        subprocess.Popen(cmd, shell=True)
+    def run_flutter_app(self, path):
+        self.process = subprocess.Popen('cmd.exe', cwd=path, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print('build project at ' + path)
+        self.process.stdin.write(("flutter run -d windows" + "\n").encode('utf-8'))
+        self.process.stdin.close()        
 
     def get_dart_vm_url(self):
-        output = subprocess.check_output('flutter run -v --machine', shell=True)
-        output_str = output.decode('utf-8')
-        pattern = re.compile(r'observatory-uri: (http://[^/]+:\d+/)')
-        match = pattern.search(output_str)
-        if match:
-            return match.group(1)
-        else:
-            return None
+        url = None
+        while True:
+            output = self.process.stdout.readline().strip().decode(encoding='gbk', errors='ignore')
+            # 提取URL
+            if('Dart VM Service' in output):
+                url_regex = r'A Dart VM Service on Windows is available at: (http://\S+)'
+                match = re.search(url_regex, output)
+                if match:
+                    url = match.group(1)
+                    print('build complete, get Dart VM Service at:' + url)
+                    break
+        return url
+        
+    def close_app(self):
+        self.process.stdout.close()
+        self.process.stderr.close()
+        subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)])
+        self.process.returncode = 1
 
 class WebFlutterRunnerStrategy(FlutterRunnerStrategy):
     def __init__(self):
-        pass
+        self.process = None
 
-    def run_flutter_app(self):
-        cmd = 'flutter run -d windows'
-        subprocess.Popen(cmd, shell=True)
+    def run_flutter_app(self, path):
+        self.process = subprocess.Popen('cmd.exe', cwd=path, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print('build project at ' + path)
+        self.process.stdin.write(("flutter run -d chrome" + "\n").encode('utf-8'))
+        self.process.stdin.close()
 
     def get_dart_vm_url(self):
-        output = subprocess.check_output('flutter run -v --machine', shell=True)
-        output_str = output.decode('utf-8')
-        pattern = re.compile(r'observatory-uri: (http://[^/]+:\d+/)')
-        match = pattern.search(output_str)
-        if match:
-            return match.group(1)
-        else:
-            return None
+        url = None
+        while True:
+            output = self.process.stdout.readline().strip().decode(encoding='gbk', errors='ignore')
+            # 提取URL
+            if('Dart VM Service' in output):
+                url_regex = r'A Dart VM Service on Chrome is available at: (http://\S+)'
+                match = re.search(url_regex, output)
+                if match:
+                    url = match.group(1)
+                    print('build complete, get Dart VM Service at:' + url)
+                    break
+        return url + '/'
+    
+    def close_app(self):
+        self.process.stdout.close()
+        self.process.stderr.close()
+        subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)])
+        self.process.returncode = 1
         
 class AndroidFlutterRunnerStrategy(FlutterRunnerStrategy):
     def __init__(self, path):

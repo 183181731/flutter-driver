@@ -20,7 +20,7 @@ class FlutterDriver:
         connect to flutter driver
         """
         if self.client is None:
-            self.client = Server(self.observatory_url, timeout=5)
+            self.client = Server(self.observatory_url, timeout=10)
             await self.client.ws_connect()
             self.command_executor = CommandExecutor()
             await self.get_isolate_id()
@@ -62,29 +62,29 @@ class FlutterDriver:
         await self.command_executor.execute_commands()
         return FlutterElement(self, finder)
 
-    async def find_element_by_semantics_label(self, label, isRegExp=False):
-        return await self.find_element(FlutterFinder().by_semantics_label(label, isRegExp))
+    async def find_element_by_semantics_label(self, label, isRegExp=False, index=None):
+        return await self.find_element(FlutterFinder().by_semantics_label(label, isRegExp, index))
 
-    async def find_element_by_text(self, text):
-        return await self.find_element(FlutterFinder().by_text(text))
+    async def find_element_by_text(self, text, index=None):
+        return await self.find_element(FlutterFinder().by_text(text, index))
 
-    async def find_element_by_tooltip(self, tooltip):
-        return await self.find_element(FlutterFinder().by_tooltip_message(tooltip))
+    async def find_element_by_tooltip(self, tooltip, index=None):
+        return await self.find_element(FlutterFinder().by_tooltip_message(tooltip, index))
 
-    async def find_element_by_type(self, widget_type):
-        return await self.find_element(FlutterFinder().by_type(widget_type))
+    async def find_element_by_type(self, widget_type, index=None):
+        return await self.find_element(FlutterFinder().by_type(widget_type, index))
 
-    async def find_element_by_value_key(self, value, type='String'):   # other type is int
-        return await self.find_element(FlutterFinder().by_value_key(value, type))
+    async def find_element_by_value_key(self, value, type='String', index=None):   # other type is int
+        return await self.find_element(FlutterFinder().by_value_key(value, type, index))
 
     async def find_page_back(self):
         return await self.find_element(FlutterFinder().page_back())
     
-    async def find_ancestor(self, of, matching, matchRoot=False, firstMatchOnly=False):
-        return await self.find_element(FlutterFinder().by_ancestor(of, matching, matchRoot, firstMatchOnly))
+    async def find_ancestor(self, of, matching, matchRoot=False, firstMatchOnly=False, index=None):
+        return await self.find_element(FlutterFinder().by_ancestor(of, matching, matchRoot, firstMatchOnly, index))
 
-    async def find_descendant(self, of, matching, matchRoot=False, firstMatchOnly=False):
-        return await self.find_element(FlutterFinder().by_descendant(of, matching, matchRoot, firstMatchOnly))
+    async def find_descendant(self, of, matching, matchRoot=False, firstMatchOnly=False, index=None):
+        return await self.find_element(FlutterFinder().by_descendant(of, matching, matchRoot, firstMatchOnly, index))
 
     async def tap_element(self, finder):
         command = TapElementCommand(self, finder, self.isolate_id)
@@ -130,6 +130,11 @@ class FlutterDriver:
         result = await command.execute()
         with open(path, "wb") as f:
             f.write(base64.b64decode(result))
+
+    async def drag(self, start_x, start_y, offset_x, offset_y, duration):
+        command = DragCommand(self, start_x, start_y, offset_x, offset_y, duration, self.isolate_id)
+        self.command_executor.add_command(command)
+        await self.command_executor.execute_commands()
 
 class FlutterElement:
     def __init__(self, driver, finder):
@@ -183,55 +188,77 @@ class FlutterFinder:
     def __init__(self):
         pass
 
-    def by_semantics_label(self, label, isRegExp):
-        return {
+    def by_semantics_label(self, label, isRegExp, index=None):
+        finder = {
             "finderType":"BySemanticsLabel",
             "label": label,
-            'isRegExp': isRegExp
+            'isRegExp': isRegExp,
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
 
-    def by_text(self, text):
-        return {
+    def by_text(self, text, index=None):
+        finder = {
             "finderType":"ByText",
             "text": text
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
 
-    def by_tooltip_message(self, message):    
-        return {
+    def by_tooltip_message(self, message, index=None):    
+        finder = {
             "finderType":"ByTooltipMessage",
             "text": message
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
+    
 
-    def by_type(self, type):
-        return {
+    def by_type(self, type, index=None):
+        finder = {
             "finderType":"ByType",
             "type": type
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
 
-    def by_value_key(self, value, type):
-        return {
+    def by_value_key(self, value, type, index=None):
+        finder = {
             "finderType":"ByValueKey",
             "keyValueString": value,
             "keyValueType": type,
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
 
-    def by_ancestor(self, of, matching, matchRoot, firstMatchOnly):
-        return {
+    def by_ancestor(self, of, matching, matchRoot, firstMatchOnly, index=None):
+        finder = {
             "finderType":"Ancestor",
             "of": json.dumps(of),
             "matching": json.dumps(matching),
             "matchRoot": matchRoot,
             "firstMatchOnly": firstMatchOnly
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
 
-    def by_descendant(self, of, matching, matchRoot=False, firstMatchOnly=False):
-        return {
+    def by_descendant(self, of, matching, matchRoot=False, firstMatchOnly=False, index=None):
+        finder = {
             "finderType":"Descendant",
             "of": json.dumps(of),
             "matching": json.dumps(matching),
             "matchRoot": matchRoot,
             "firstMatchOnly": firstMatchOnly
         }
+        if (index!=None):
+            finder.update({ "index": index })
+        return finder
 
     def page_back(self):
         return {
