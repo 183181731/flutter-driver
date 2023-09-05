@@ -62,39 +62,58 @@ download and unarchive the source tarball (flutter-drvier-X.X.tar.gz).
 # How to use
 
 ```python
-import time
 import asynctest
+import time
 
-from flutter_driver import Runner
-from flutter_driver import FlutterDriver
+from flutter_driver import FlutterDriver, FlutterFinder
 
-class FlutterAppTest(asynctest.TestCase):
-
-    async def test_driver_for_windows(self):
-        runner = Runner('Windows')
-        vm_url = runner.runApp("E:\\FlutterProjects\\brushcore\\brush-v3\\flutter\\sample")
+class FlutterDriverTest(asynctest.TestCase):
+    async def test_finders_for_windows(self):
+        vm_url = "http://127.0.0.1:5322/nui91pl-Jss=/"    # dartVM Observatory url 
         driver = FlutterDriver(vm_url)
-        time.sleep(10)
         await driver.connect()
-        res = await driver.is_enable_driver()
-        print(res)
-        insertbtn = await driver.find_element_by_text("插入")   # 获取并点击插入菜单
-        await insertbtn.click()
+
+        print(await driver.is_enable_driver())       # 输出ext.flutter.driver启用状态
+
+        textfield = await driver.find_element_by_type("TextField")   # 获取并点击文本框控件
+        await textfield.click()
+        time.sleep(1)
+        await driver.enter_text("测试文本")                     # 输入测试文本
         time.sleep(1)
 
-        xzbtn = await driver.find_element_by_text("形状")   # 获取并点击形状菜单
-        await xzbtn.click()
-        time.sleep(1)
+        gotobtn = await driver.find_element_by_text("Go to Counter Page")     # 获取进入统计页面按钮并点击
+        location = await gotobtn.get_location()
+        size = await gotobtn.get_size()
+        print(location)         # 输出控件位置信息
+        print(size)             # 输出控件大小信息
+        await gotobtn.click()
 
-        jxbtn = await driver.find_element_by_type('Image', index="24")   # 根据索引拿到具体某个形状的菜单
-        await jxbtn.click()
         time.sleep(1)
+        textlable = await driver.find_element_by_value_key('home_text')    # 获取从上一页获取的文本信息
+        text = await textlable.get_text()
+        assert "测试文本" in text      #  断言文本包含了测试文本
 
-        await driver.drag("781", "180", "300", "300", "500")   # 在画布的某个区域拖动绘制出图形
+        count_btn = await driver.find_element_by_tooltip("Increment")     # 获取并点击计数按钮控件
+        await count_btn.click()
+
+        tooltip = FlutterFinder().by_tooltip_message('Increment')     
+        icon = FlutterFinder().by_type('Icon')
         
-        time.sleep(20)
-        # await driver.screenshot('screenshot.png')       # 获取屏幕截屏
-        runner.stopApp()
+        count_btn = await driver.find_descendant(tooltip, icon)      # 使用子节点的方式定位计数按钮控件
+        await count_btn.click()
+
+        count_btn = await driver.find_ancestor(icon, tooltip)      # 使用祖先节点的方式定位计数按钮控件
+        await count_btn.click()        
+
+        countlable = await driver.find_element_by_value_key('counter_value')   # 获取计数统计显示数值
+        count = await countlable.get_text()
+        assert count == '3'      # 断言计数按钮点击了3次
+        time.sleep(2)
+        await driver.screenshot('screenshot.png')       # 获取屏幕截屏
+
+        back_btn = await driver.find_page_back()       # 获取并点击返回按钮
+        await back_btn.click()
+
         await driver.close()
 
 if __name__ == '__main__':
