@@ -39,6 +39,7 @@ setup(
     ],
     install_requires=[         
         'aiohttp',         
-        'jsonrpc_base'
+        'jsonrpc_base',
+        'pywinauto'
     ]
 )

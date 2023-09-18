@@ -22,7 +22,10 @@ class Command:
             raise TransportError("command execute timeout")            
 
     def parse_response(self, response):
-        pass
+        if(response['isError']):
+            raise Exception(response['response'])
+        else:
+            return response['response']
 
 class GetVMCommand(Command):
     def build_command(self):
@@ -67,10 +70,7 @@ class FindElementCommand(Command):
         return {
             'method': 'ext.flutter.driver',
             'params': params,
-        }
-    
-    def parse_response(self, response):
-        return response['response']
+        }        
     
 class GetOffsetCommand(Command):
     def __init__(self, driver, finder, offset_type, isolate_id):
@@ -89,9 +89,25 @@ class GetOffsetCommand(Command):
             'method': 'ext.flutter.driver',
             'params': params,
         }
+
+class GetElementCountCommand(Command):
+    def __init__(self, driver, finder, isolate_id):
+        super().__init__(driver, isolate_id)
+        self.finder = finder
+
+    def build_command(self):
+        params = {
+            'command': 'get_element_count',
+            'isolateId': self.isolate_id,
+        }
+        params.update(self.finder)
+        return {
+            'method': 'ext.flutter.driver',
+            'params': params,
+        }
     
     def parse_response(self, response):
-        return response['response']
+        return super().parse_response(response)['count']
 
 class TapElementCommand(Command):
     def __init__(self, driver, finder, isolate_id):
@@ -140,10 +156,9 @@ class GetElementTextCommand(Command):
             'method': 'ext.flutter.driver',
             'params': params,
         }
-    
     def parse_response(self, response):
-        return response['response']['text']
-    
+        return super().parse_response(response)['text']
+
 class ScrollCommand(Command):
     def __init__(self, driver, finder, dx, dy, duration, frequency, isolate_id):
         super().__init__(driver, isolate_id)
@@ -167,9 +182,6 @@ class ScrollCommand(Command):
             'method': 'ext.flutter.driver',
             'params': params,
         }
-    
-    def parse_response(self, response):
-        return response['response']
 
 class DragCommand(Command):
     def __init__(self, driver, start_x, start_y, offset_x, offset_y, duration, isolate_id):
@@ -194,6 +206,3 @@ class DragCommand(Command):
             'method': 'ext.flutter.driver',
             'params': params,
         }
-    
-    def parse_response(self, response):
-        return response['response']
