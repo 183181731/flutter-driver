@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 import re
 class FlutterRunnerStrategy:
@@ -25,29 +26,29 @@ class Runner:
         elif platform == 'iOS':
             self.runner_strategy = IOSFlutterRunnerStrategy()
 
-    def runApp(self, path):
-        self.runner_strategy.run_flutter_app(path)
-        return self.runner_strategy.get_dart_vm_url()
+    async def runApp(self, path, port=8889):
+        await self.runner_strategy.run_flutter_app(path, port)
+        return await self.runner_strategy.get_dart_vm_url()
 
-    def stopApp(self):
-        self.runner_strategy.close_app()
-
+    async def stopApp(self):
+        await self.runner_strategy.close_app()
 
 class WindowsFlutterRunnerStrategy(FlutterRunnerStrategy):
     def __init__(self):
         self.process = None
 
-    def run_flutter_app(self, path):
-        self.process = subprocess.Popen('cmd.exe', cwd=path, stdin=subprocess.PIPE,
+    async def run_flutter_app(self, path, port):
+        self.process = await asyncio.create_subprocess_shell('cmd.exe', cwd=path, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print('build project at ' + path)
-        self.process.stdin.write(("flutter run -d windows" + "\n").encode('utf-8'))
-        self.process.stdin.close()        
+        self.process.stdin.write(("flutter run --observatory-port " + str(port) +  " --disable-service-auth-codes -d windows" + "\n").encode('utf-8'))
+        self.process.stdin.close()
 
-    def get_dart_vm_url(self):
+    async def get_dart_vm_url(self):
         url = None
         while True:
-            output = self.process.stdout.readline().strip().decode(encoding='gbk', errors='ignore')
+            output = await self.process.stdout.readline()
+            output = output.strip().decode(encoding='gbk', errors='ignore')
             # 提取URL
             if('Dart VM Service' in output):
                 url_regex = r'A Dart VM Service on Windows is available at: (http://\S+)'
@@ -55,30 +56,31 @@ class WindowsFlutterRunnerStrategy(FlutterRunnerStrategy):
                 if match:
                     url = match.group(1)
                     print('build complete, get Dart VM Service at:' + url)
-                    break
+                    break        
         return url
         
-    def close_app(self):
-        self.process.stdout.close()
-        self.process.stderr.close()
+    async def close_app(self):
+        self.process.stdout.feed_eof()  # 关闭 StreamReader
+        self.process.stderr.feed_eof()  # 关闭 StreamReader
         subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)])
-        self.process.returncode = 1
+
 
 class WebFlutterRunnerStrategy(FlutterRunnerStrategy):
     def __init__(self):
         self.process = None
 
-    def run_flutter_app(self, path):
-        self.process = subprocess.Popen('cmd.exe', cwd=path, stdin=subprocess.PIPE,
+    async def run_flutter_app(self, path, port):
+        self.process = await asyncio.create_subprocess_shell('cmd.exe', cwd=path, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print('build project at ' + path)
-        self.process.stdin.write(("flutter run -d chrome" + "\n").encode('utf-8'))
+        self.process.stdin.write(("flutter run --observatory-port " + str(port) +  " --disable-service-auth-codes -d chrome" + "\n").encode('utf-8'))
         self.process.stdin.close()
 
-    def get_dart_vm_url(self):
+    async def get_dart_vm_url(self):
         url = None
         while True:
-            output = self.process.stdout.readline().strip().decode(encoding='gbk', errors='ignore')
+            output = await self.process.stdout.readline()
+            output = output.strip().decode(encoding='gbk', errors='ignore')
             # 提取URL
             if('Dart VM Service' in output):
                 url_regex = r'A Dart VM Service on Chrome is available at: (http://\S+)'
@@ -89,11 +91,10 @@ class WebFlutterRunnerStrategy(FlutterRunnerStrategy):
                     break
         return url + '/'
     
-    def close_app(self):
-        self.process.stdout.close()
-        self.process.stderr.close()
+    async def close_app(self):
+        self.process.stdout.feed_eof()  # 关闭 StreamReader
+        self.process.stderr.feed_eof()  # 关闭 StreamReader
         subprocess.call(['taskkill', '/F', '/T', '/PID', str(self.process.pid)])
-        self.process.returncode = 1
         
 class AndroidFlutterRunnerStrategy(FlutterRunnerStrategy):
     def __init__(self, path):

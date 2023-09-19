@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='flutter-driver',
-    version='1.0.5',
+    version='1.0.8',
     description='An flutter automation driver for python',
     long_description=io.open(os.path.join(os.path.dirname('__file__'), 'README.md'), encoding='utf-8').read(),
     long_description_content_type='text/markdown',
