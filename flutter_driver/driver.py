@@ -9,12 +9,11 @@ class FlutterDriver:
     _instance = None
 
     def __new__(cls, observatory_url):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance.client = None
-            cls._instance.observatory_url = observatory_url if observatory_url.startswith('ws') else "ws://{}ws".format(observatory_url[7:])
-            cls._instance.command_executor = None
-            cls._instance.isolate_id = None
+        cls._instance = super().__new__(cls)
+        cls._instance.client = None
+        cls._instance.observatory_url = observatory_url if observatory_url.startswith('ws') else "ws://{}ws".format(observatory_url[7:])
+        cls._instance.command_executor = None
+        cls._instance.isolate_id = None
         return cls._instance        
 
     async def connect(self):
